@@ -94,3 +94,7 @@ static_assert(!TIsContainer<int32>::Value);
 ## Tests
 
 Editor automation specs are in `Plugins/Strify/Source/Strify/Private/Tests` (`Strify.UnitTests`).
+
+## License
+
+[MIT](LICENSE). When used with Unreal Engine, the Epic Games Unreal Engine EULA still applies.
