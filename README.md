@@ -1,86 +1,47 @@
 # Strify
 
-## 项目介绍
+English | [简体中文](README.zh-CN.md)
 
-Strify 是一个基于 C++ 开发的字符串处理和模板元编程工具库，专注于为开发人员提供高效的编译期类型操作和运行时数据转换功能。项目深度集成 Unreal Engine 框架，旨在简化游戏开发和实时系统中的日志输出、调试流程及类型安全转换工作流。
+Unreal Engine plugin that converts values to `FString` via `UStrify::ToString`. Overload selection is compile-time (SFINAE / `if constexpr`). Types can opt in with a `ToString()` member.
 
-**核心价值**：
-- 通过模板元编程实现编译期类型检查与优化，提升运行时性能
-- 提供统一的数据到字符串转换接口，支持包括 UObject、弱指针、容器、枚举等复杂类型的标准化输出
-- 模块化架构设计，工具包层与测试层分离，便于功能扩展和集成验证
-- 专为 Unreal Engine 项目优化的字符串处理方案，内置生命周期管理与引擎无缝对接
+## Requirements
 
-**典型应用场景**：
-- 游戏开发中的调试信息格式化输出
-- 实时系统的运行时日志生成
-- 复杂数据结构的可视化诊断
-- 自动化测试用例的验证输出
+- Unreal Engine 5.6+
 
-## 功能简介
+## Install
 
-### 核心功能模块
-
-| 模块             | 功能描述                                                                  |
-|------------------|---------------------------------------------------------------------------|
-| UStrify          | 提供静态方法实现运行时数据转换（基本类型/指针/容器→FString）              |
-| 模板元编程工具集 | 包含 TIsContainer 类型检查、FTrueType/FFalseType 标记等编译期工具         |
-| FStrifyModule    | 模块生命周期管理（初始化/关闭）                                           |
-| 测试层           | 通过 Automation Spec 验证核心功能                                         |
-
-### 关键特性
-- **智能类型转换**：自动处理弱指针有效性（无效返回 `""`）、容器格式化等边界情况；UObject 子类若没有 `ToString()`，统一渲染为 `<unsupported {ClassName}: {GetName()}>`
-- **多格式输出**：支持单行/多行模式控制字符串呈现格式
-- **扩展性设计**：通过为类型添加 `ToString()` 成员函数，由 SFINAE 自动检测并接入
-- **性能优化**：编译期类型特征判断避免运行时开销
-
-## 快速上手
-
-### 环境要求
-- **编译器**：支持 C++17 及模板元编程的现代编译器
-- **引擎依赖**：Unreal Engine 5.6+
-- **构建系统**：Unreal Build Tool (UBT)
-
-### 基础集成
-1. 将 Strify 模块复制到项目 Plugins 目录
-2. 在 `.uproject` 中启用插件：
+1. Copy `Plugins/Strify` into your project's `Plugins` directory.
+2. Enable the plugin in the `.uproject`:
 
 ```json
 "Plugins": [
-    { "Name": "Strify", "Enabled": true }
+  { "Name": "Strify", "Enabled": true }
 ]
 ```
 
-3. 在代码中调用转换接口：
+3. Add the module to any `Build.cs` that includes the headers:
+
+```cs
+PublicDependencyModuleNames.Add("Strify");
+```
+
+This repository is a UE 5.6 sample project (`StrifyTest`) that already contains the plugin.
+
+## Usage
 
 ```cpp
-// 基本类型转换
+#include "Strify.h"
+
 FString IntStr = UStrify::ToString(42);
-// 容器转换
+
 TArray<int32> Numbers = {1, 2, 3};
-FString ArrayStr = UStrify::ToString(Numbers, true); // 多行模式
-// 日志输出
-UE_LOG(LogTemp, Display, TEXT("Converted: %s"), *ArrayStr);
+FString ArrayStr = UStrify::ToString(Numbers);        // [1, 2, 3]
+FString Multiline = UStrify::ToString(Numbers, true); // [\n1,\n2,\n3\n]
+
+UE_LOG(LogTemp, Display, TEXT("%s"), *ArrayStr);
 ```
 
-### 测试验证
-在测试场景的 BeginPlay 中调用示例测试：
-
-```cpp
-void ATestActor::BeginPlay()
-{
-    Super::BeginPlay();
-
-    // 验证整数数组转换
-    TArray<int32> TestArray = {10, 20, 30};
-    FString Result = UStrify::ToString(TestArray);
-    UE_LOG(LogTemp, Log, TEXT("Array Test: %s"), *Result);
-}
-```
-
-## 常见问题
-
-**Q：如何处理自定义类型的字符串转换？**
-A：为类型添加 `FString ToString() const` 成员函数，`THasToStringFunc` 会通过 SFINAE 自动检测并接入：
+Add `FString ToString() const` on a struct or `UObject` subclass; `THasToStringFunc` detects it:
 
 ```cpp
 struct FMyStruct
@@ -95,19 +56,41 @@ struct FMyStruct
 };
 ```
 
-**Q：弱指针转换时输出空字符串？**
-A：这是预期行为——当指针为 null 或弱指针失效时返回空串 `""`。在容器中表现为一个真实的空缺位（例如 `[1, , 3]`）。可通过 `IsValid()` 预先检查：
+## Supported types
+
+| Kind | Result |
+|------|--------|
+| Integers | Decimal |
+| Floating point | Three decimal places (`%.3f`) |
+| `bool` | `true` / `false` |
+| `FString` | Unchanged |
+| `UENUM` enum class | Reflection name |
+| `TEnumAsByte<T>` | `UEnum::GetValueAsString` |
+| Other enums | `TypeName(underlying)` |
+| Types with `ToString()` | That member |
+| `UObject` without `ToString()` | `<unsupported {ClassName}: {GetName()}>` |
+| Raw, shared, unique, weak, and object pointers | Recurse if valid; `""` if null or stale |
+| `FVariant` | Routed by stored type; unknown → `<unsupported variant: EVariantTypes(N)>` |
+| `TArray` | `[a, b, c]` |
+| `TSet` | `(a, b, c)` |
+| `TMap` | `{key: value, ...}` |
+| Byte buffers | `UStrify::ToHexString` — uppercase hex, no separators |
+
+Empty containers stringify to `""`. Null or empty elements inside a container keep a slot (`[1, , 3]`). Nested containers recurse.
+
+## Type traits
+
+`TypeTraits.h`:
+
+- `TIsContainer<T>` — `begin()`, `end()`, and `IsEmpty()`
+- `THasToStringFunc<T>` — `FString ToString()` (via `DECLARE_HASFUNCTION_TYPETRAITS`)
+- `Strify::GetTypeName<T>()` — compiler signature (`__FUNCSIG__` / `__PRETTY_FUNCTION__`), no UE reflection
 
 ```cpp
-if (WeakPtr.IsValid()) {
-    FString ObjInfo = UStrify::ToString(WeakPtr);
-}
+static_assert(TIsContainer<TArray<int32>>::Value);
+static_assert(!TIsContainer<int32>::Value);
 ```
 
-**Q：如何验证容器类型判断是否正确？**
-A：使用编译时静态断言：
+## Tests
 
-```cpp
-static_assert(TIsContainer<TArray<int32>>::Value, "Should be container");
-static_assert(!TIsContainer<int32>::Value, "Should not be container");
-```
+Editor automation specs are in `Plugins/Strify/Source/Strify/Private/Tests` (`Strify.UnitTests`).
