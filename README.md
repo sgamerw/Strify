@@ -46,6 +46,23 @@ FString Multiline = UStrify::ToString(Numbers, true); // [\n1,\n2,\n3\n]
 UE_LOG(LogTemp, Display, TEXT("%s"), *ArrayStr);
 ```
 
+Logging `TMap<uint64, TSet<int32>>`:
+
+```cpp
+// Before
+UE_LOG(LogTemp, Display, TEXT("IdToValues: %s"), *FString::JoinBy(IdToValues, TEXT(","), [](const TPair<uint64, TSet<int32>>& Pair) {
+    return FString::Printf(TEXT("{%llu:[%s]}"), Pair.Key, *FString::JoinBy(Pair.Value, TEXT(","), [](int32 Value) {
+        return FString::Printf(TEXT("%d"), Value);
+    }));
+}));
+
+// After — second arg is Multilines
+UE_LOG(LogTemp, Display, TEXT("IdToValues: %s"), *UStrify::ToString(IdToValues, true));
+```
+
+- Less to type.
+- The map used to be `TMap<uint64, TArray<int32>>`, then became `TMap<uint64, TSet<int32>>`. Nested `FString::JoinBy` lambdas must change parameter types; `UStrify::ToString` does not.
+
 Add `FString ToString() const` on a struct or `UObject` subclass; `THasToStringFunc` detects it:
 
 ```cpp
