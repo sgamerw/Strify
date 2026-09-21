@@ -2,6 +2,11 @@
 
 English | [简体中文](README.zh-CN.md)
 
+![UE 5.6+](https://img.shields.io/badge/UE-5.6%2B-313131)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+*Not `LexToString`, not JSON — compile-time debug stringify for UE containers and pointers.*
+
 Unreal Engine plugin that converts values to `FString` via `UStrify::ToString`. Overload selection is compile-time (SFINAE / `if constexpr`). Types can opt in with a `ToString()` member.
 
 ## Requirements

@@ -2,6 +2,11 @@
 
 [English](README.md) | 简体中文
 
+![UE 5.6+](https://img.shields.io/badge/UE-5.6%2B-313131)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+*不是 `LexToString`，不是 JSON — 面向 UE 容器和指针的编译期调试 stringify。*
+
 Unreal Engine 插件，通过 `UStrify::ToString` 将值转为 `FString`。重载在编译期选择（SFINAE / `if constexpr`）。类型可提供 `ToString()` 成员以接入。
 
 ## 环境要求
