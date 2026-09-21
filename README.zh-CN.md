@@ -46,6 +46,23 @@ FString Multiline = UStrify::ToString(Numbers, true); // [\n1,\n2,\n3\n]
 UE_LOG(LogTemp, Display, TEXT("%s"), *ArrayStr);
 ```
 
+打印 `TMap<uint64, TSet<int32>>`：
+
+```cpp
+// 之前
+UE_LOG(LogTemp, Display, TEXT("IdToValues: %s"), *FString::JoinBy(IdToValues, TEXT(","), [](const TPair<uint64, TSet<int32>>& Pair) {
+    return FString::Printf(TEXT("{%llu:[%s]}"), Pair.Key, *FString::JoinBy(Pair.Value, TEXT(","), [](int32 Value) {
+        return FString::Printf(TEXT("%d"), Value);
+    }));
+}));
+
+// 之后 — 第二参数是 Multilines
+UE_LOG(LogTemp, Display, TEXT("IdToValues: %s"), *UStrify::ToString(IdToValues, true));
+```
+
+- 少写很多代码。
+- 该 map 曾是 `TMap<uint64, TArray<int32>>`，后来改成 `TMap<uint64, TSet<int32>>`。嵌套 `FString::JoinBy` 的 lambda 参数类型必须跟着改；`UStrify::ToString` 不受影响。
+
 在结构体或 `UObject` 子类上添加 `FString ToString() const`，`THasToStringFunc` 会自动检测：
 
 ```cpp
