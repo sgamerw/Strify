@@ -94,3 +94,7 @@ static_assert(!TIsContainer<int32>::Value);
 ## 测试
 
 编辑器 Automation Spec 位于 `Plugins/Strify/Source/Strify/Private/Tests`（`Strify.UnitTests`）。
+
+## 许可证
+
+[MIT](LICENSE)。与 Unreal Engine 一起使用时，仍受 Epic Games 的 Unreal Engine EULA 约束。
